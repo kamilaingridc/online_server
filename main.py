@@ -8,11 +8,13 @@ from urllib.parse import parse_qs
 class MyHandler(SimpleHTTPRequestHandler):
     def list_directory(self, path):
         try:
-            with open(os.path.join(path, 'index.html'), 'r', encoding='utf-8') as f:
-                self.send_response(200)
-                self.send_header("Content-type", "text/html; charset=utf-8")
-                self.end_headers()
-                self.wfile.write(f.read().encode('utf-8'))
+            # tenta abrir um arquivo
+            f = open(os.path.join(path, 'index.html'), 'r')
+            self.send_response(200)
+            self.send_header("Content-type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(f.read().encode('utf-8'))
+            f.close()
             return None
         except FileNotFoundError:
             pass
@@ -54,11 +56,14 @@ class MyHandler(SimpleHTTPRequestHandler):
 
     def usuario_existente(self, login, senha):
         # verifica a existência do login
-        with open('dados_login.txt', 'r') as file:
+        with open('dados_login.txt', 'r', encoding='utf-8') as file:
             for line in file:
-                stored_login, _ = line.strip().split(';')
+                stored_login, stored_senha = line.strip().split(';')
                 if login == stored_login:
-                    return True
+                    print("Cheguei aqui significando que localizei o login informado.")
+                    print("Senha:" + senha)
+                    print("Senha armazenada:" + senha)
+                    return senha == stored_senha
         return False
 
     def do_POST(self):
@@ -69,20 +74,16 @@ class MyHandler(SimpleHTTPRequestHandler):
             # le o corpo da aquisição
             body = self.rfile.read(content_length).decode('utf-8')
             # parseia os dados do formulário
-            form_data = parse_qs(body)
+            form_data = parse_qs(body, keep_blank_values=True)
 
             # exibe os dados no terminal
             print("Dados do formulário:")
             print("Email:", form_data.get('email', [''])[0])
             print("Senha:", form_data.get('password', [''])[0])
 
-            # armazena 
-            with open('dados_login.txt', 'a') as file:
-                login = form_data.get('email', [''])[0]
-                senha = form_data.get('password', [''])[0]
-                file.write(f'{login};{senha}\n')
-
+            # verifica existência
             login = form_data.get('email', [''])[0]
+            senha = form_data.get('password', [''])[0]
 
             if self.usuario_existente(login, senha):
                 self.send_response(200)
@@ -96,7 +97,7 @@ class MyHandler(SimpleHTTPRequestHandler):
                 # self.wfile.write(content.encode('utf-8'))
             else:
                 # verifica se existe
-                if any(line.startswitch(f"{login};") for line in open('dados_login.txt', 'r', encoding='utf-8')):
+                if any(line.startswith(f"{login};") for line in open('dados_login.txt', 'r', encoding='utf-8')):
                     # redirecionamento
                     self.send_response(302)
                     self.send_header('Location', '/login_failed')
@@ -111,6 +112,7 @@ class MyHandler(SimpleHTTPRequestHandler):
                     self.send_header("Content-type", "text/html; charset=utf-8")
                     self.end_headers()
                     mensagem = f"Olá, {login}, seja bem-vindo! Percebemos que você é novo por aqui."
+                    self.wfile.write(mensagem.encode('utf-8'))
 
         else:
             # se não for a rota "/login", continua com o comportamento padrão
