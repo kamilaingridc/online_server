@@ -1,4 +1,4 @@
-# importa o módulo http.server
+# importações
 import os
 from http.server import SimpleHTTPRequestHandler
 import socketserver
@@ -34,6 +34,15 @@ class MyHandler(SimpleHTTPRequestHandler):
             # se não achar a rota "/login", continua o comportamento padrão
             super().do_GET()
 
+    def usuario_existente(self, login):
+        # verifica a existência do login
+        with open('dados_login.txt', 'r') as file:
+            for line in file:
+                stored_login, _ = line.strip().split(';')
+                if login == stored_login:
+                    return True
+        return False
+
     def do_POST(self):
         # verifica se a rota é "/enviar_login"
         if self.path == "/enviar_login":
@@ -50,16 +59,32 @@ class MyHandler(SimpleHTTPRequestHandler):
             print("Senha:", form_data.get('password', [''])[0])
 
             # armazena 
-            with open ('dados_login.txt', 'a') as file:
+            with open('dados_login.txt', 'a') as file:
                 login = form_data.get('email', [''])[0]
                 senha = form_data.get('password', [''])[0]
                 file.write(f'{login};{senha}\n')
 
-            # responde ao cliente
-            self.send_response(200)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            self.wfile.write("Dados recebidos com sucesso!".encode('utf-8'))
+            login = form_data.get('email', [''])[0]
+
+            if self.usuario_existente(login):
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html; charset=utf-8')
+                self.end_headers()
+                mensagem = f'Usuário {login} já consta em nossos registros!'
+                self.wfile.write(mensagem.encode('utf-8'))
+                # SUBSTITUIR POR UMA PÁGINA HTML
+                # with open(os.path.join(os.getcwd(), 'index.html'), 'r') as file:
+                #     content = file.read()
+                # self.wfile.write(content.encode('utf-8'))
+            else:
+                # responde ao cliente
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
+                # self.wfile.write("Dados recebidos e armazenados com sucesso!".encode('utf-8'))
+                with open(os.path.join(os.getcwd(), 'index.html'), 'r') as file:
+                    content = file.read()
+                self.wfile.write(content.encode('utf-8'))
 
         else:
             # se não for a rota "/login", continua com o comportamento padrão
