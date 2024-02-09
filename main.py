@@ -41,14 +41,15 @@ class MyHandler(SimpleHTTPRequestHandler):
 
             # le o html
             with open(os.path.join(os.getcwd(), 'login.html'), 'r', encoding='utf-8') as login_file:
-                content = login_file.read
+                content = login_file.read()
 
-            # adiciona mensagem de erro
+            # # adiciona mensagem de erro
             mensagem = 'Login e/ou senha incorreto. Tente novamente.'
             content = content.replace('<!-- Mensagem de erro será inserida aqui -->',
                                       f'<div class="error-message">{mensagem}</div>')
-            # envia pro cliente
+            # # envia pro cliente
             self.wfile.write(content.encode('utf-8'))
+            # self.wfile.write("Senha incorreta".encode('utf-8'))
 
         else:
             # se não achar a rota "/login", continua o comportamento padrão
@@ -106,7 +107,7 @@ class MyHandler(SimpleHTTPRequestHandler):
                 else:
                     # adc novo usuário
                     with open('dados_login.txt', 'a', encoding='utf-8') as file:
-                        file.write(f"{login};{senha}")
+                        file.write(f"{login};{senha}\n")
                     # responde com boas vindas
                     self.send_response(200)
                     self.send_header("Content-type", "text/html; charset=utf-8")
