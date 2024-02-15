@@ -51,6 +51,35 @@ class MyHandler(SimpleHTTPRequestHandler):
             self.wfile.write(content.encode('utf-8'))
             # self.wfile.write("Senha incorreta".encode('utf-8'))
 
+        elif self.path.startswith('/cadastro'):
+            # extraindo parâmetros da URL
+            query_params = parse_qs(urlparse(self.path).query)
+            login = query_params.get('login', [' '])[0]
+            senha = query_params.get('password', [' '])[0]
+
+            # msg boas vindas
+            welcome_message = f"Olá {login}, seja bem-vindo! Percebemos que você é novo por aqui, bora fazer o cadastro?"
+
+            # responde com a page de cadastro
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self.end_headers()
+
+            # le o conteudo da page cadastro
+            with open(os.path.join(os.getcwd(), 'cadastro.html'), 'r', encoding='utf-8') as cadastro_file:
+                content = cadastro_file.read()
+
+            # substitui os marcadores de posição pelos valores correspondentes
+            content = content.replace('{login}', login)
+            content = content.replace('{senha}', senha)
+            content = content.replace('{welcome_message}', welcome_message)
+
+            # envia para o cliente
+            self.wfile.write(content.encode('utf-8'))
+
+            # evita a execução do resto
+            return
+
         else:
             # se não achar a rota "/login", continua o comportamento padrão
             super().do_GET()
@@ -107,7 +136,15 @@ class MyHandler(SimpleHTTPRequestHandler):
                 else:
                     # adc novo usuário
                     with open('dados_login.txt', 'a', encoding='utf-8') as file:
-                        file.write(f"{login};{senha}\n")
+                        file.write(f"{login};{senha};" + "none\n")
+
+                    #redireciona
+                    self.send_response(302)
+                    self.send_header('Location', f'/cadastro?login={login}&senha{senha}')
+                    self.end_headers()
+
+                    return
+
                     # responde com boas vindas
                     self.send_response(200)
                     self.send_header("Content-type", "text/html; charset=utf-8")
