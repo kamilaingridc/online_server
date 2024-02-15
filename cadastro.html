@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Login</title>
+	<title>Cadastro</title>
 	<link rel="stylesheet" href="./style/login.css">
 	<!-- <link rel="stylesheet" href="style.css"> -->
 
@@ -14,8 +14,15 @@
 			<div class="error-message">
 				<!-- Mensagem de erro será inserida aqui -->
 			</div>
-			<h2>Welcome</h2>
-			<form action="/enviar_login" method="post">
+			<div class="welcome-message">
+				{welcome_message}
+			</div>
+
+			<h2>Register</h2>
+			<form action="/confirmar_cadastro" method="post">
+				<label for="nome">Nome:</label>
+				<input type="text" id="nome" name="nome" required>
+
 				<label for="email">Email:</label>
 				<input type="email" id="email" name="email" required>
 

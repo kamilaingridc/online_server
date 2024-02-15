@@ -2,7 +2,7 @@
 import os
 from http.server import SimpleHTTPRequestHandler
 import socketserver
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlparse
 
 
 class MyHandler(SimpleHTTPRequestHandler):
@@ -43,13 +43,42 @@ class MyHandler(SimpleHTTPRequestHandler):
             with open(os.path.join(os.getcwd(), 'login.html'), 'r', encoding='utf-8') as login_file:
                 content = login_file.read()
 
-            # # adiciona mensagem de erro
+            # adiciona mensagem de erro
             mensagem = 'Login e/ou senha incorreto. Tente novamente.'
             content = content.replace('<!-- Mensagem de erro será inserida aqui -->',
                                       f'<div class="error-message">{mensagem}</div>')
             # # envia pro cliente
             self.wfile.write(content.encode('utf-8'))
             # self.wfile.write("Senha incorreta".encode('utf-8'))
+
+        elif self.path.startswith('/cadastro'):
+            # extraindo parâmetros da URL
+            query_params = parse_qs(urlparse(self.path).query)
+            login = query_params.get('login', [' '])[0]
+            senha = query_params.get('password', [' '])[0]
+
+            # msg boas vindas
+            welcome_message = f"Olá {login}, seja bem-vindo! Percebemos que você é novo por aqui, bora fazer o cadastro?"
+
+            # responde com a page de cadastro
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self.end_headers()
+
+            # le o conteudo da page cadastro
+            with open(os.path.join(os.getcwd(), 'cadastro.html'), 'r', encoding='utf-8') as cadastro_file:
+                content = cadastro_file.read()
+
+            # substitui os marcadores de posição pelos valores correspondentes
+            content = content.replace('{login}', login)
+            content = content.replace('{senha}', senha)
+            content = content.replace('{welcome_message}', welcome_message)
+
+            # envia
+            self.wfile.write(content.encode('utf-8'))
+
+            # evita a execução do resto
+            return
 
         else:
             # se não achar a rota "/login", continua o comportamento padrão
