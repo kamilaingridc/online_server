@@ -26,7 +26,7 @@
         </li>
       </ul>
   
-      <button class="button">Login</button>
+      <button class="button" id="form-open">Login</button>
     </nav>
 
   </header>
@@ -63,7 +63,39 @@
           <button class="button">Login</button>
 
           <div class="login_signup">
-            Already have an account? <a href="#" id="signup">Sign up</a>
+            Don't have an account? <a href="#" id="signup">Sign up</a>
+          </div>
+
+        </form>
+
+      </div>
+
+      <!-- new register -->
+      <div class="form signup_form">
+
+        <form action="#">
+          <h2>Sign Up</h2>
+
+          <div class="input_box">
+            <input type="email" placeholder="Enter your email" required/> 
+            <i class="uil uil-envelope-alt email"></i>
+          </div>
+          <div class="input_box">
+            <input type="password" placeholder="Create password" required/>
+            <i class="uil uil-lock password"></i>
+            <i class="uil uil-eye-slash pw_hide"></i>
+          </div>
+          <!-- snd  -->
+          <div class="input_box">
+            <input type="password" placeholder="Confirm your password" required/>
+            <i class="uil uil-lock password"></i>
+            <i class="uil uil-eye-slash pw_hide"></i>
+          </div>
+
+          <button class="button">Sign Up Now</button>
+
+          <div class="login_signup">
+            Already have an account? <a href="#" id="login">Login</a>
           </div>
 
         </form>
@@ -73,5 +105,7 @@
     </div>
   </section>
   
+  <script src="script/script.js"></script>
+
 </body>
 </html>
