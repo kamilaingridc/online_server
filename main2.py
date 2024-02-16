@@ -88,13 +88,21 @@ class MyHandler(SimpleHTTPRequestHandler):
         # verifica a existência do login
         with open('dados_login.txt', 'r', encoding='utf-8') as file:
             for line in file:
-                stored_login, stored_senha = line.strip().split(';')
-                if login == stored_login:
-                    print("Cheguei aqui significando que localizei o login informado.")
-                    print("Senha:" + senha)
-                    print("Senha armazenada:" + senha)
-                    return senha == stored_senha
+                if line.strip():
+                    stored_login, stored_senha, stored_nome = line.strip().split(';')
+                    if login == stored_login:
+                        print("Cheguei aqui significando que localizei o login informado.")
+                        print("Senha:" + senha)
+                        print("Senha armazenada:" + senha)
+                        return senha == stored_senha
         return False
+
+    def remover_ultima_linha(self, arquivo):
+        print("Vou excluir a última linha.")
+        with open(arquivo, 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+        with open(arquivo, 'w', encoding='utf-8') as file:
+            file.writelines(lines[:-1])
 
     def do_POST(self):
         # verifica se a rota é "/enviar_login"
@@ -138,23 +146,53 @@ class MyHandler(SimpleHTTPRequestHandler):
                     with open('dados_login.txt', 'a', encoding='utf-8') as file:
                         file.write(f"{login};{senha};" + "none\n")
 
-                    #redireciona
+                    # redireciona
                     self.send_response(302)
                     self.send_header('Location', f'/cadastro?login={login}&senha{senha}')
                     self.end_headers()
 
                     return
 
-                    # responde com boas vindas
-                    self.send_response(200)
-                    self.send_header("Content-type", "text/html; charset=utf-8")
-                    self.end_headers()
-                    mensagem = f"Olá, {login}, seja bem-vindo! Percebemos que você é novo por aqui."
-                    self.wfile.write(mensagem.encode('utf-8'))
+        elif self.path.startswith('/confirmar_cadastro'):
+            # obtém o comprimento do corpo da requisição
+            content_length = int(self.headers['Content-Length'])
+            # le o corpo
+            body = self.rfile.read(content_length).decode('utf-8')
+            # parseia os dados do formulário
+            form_data = parse_qs(body, keep_blank_values=True)
+
+            # query_params = parse_qs(urlparse(self.path).query)
+            login = form_data.get('login', [''])[0]
+            senha = form_data.get('password', [''])[0]
+            nome = form_data.get('nome', [''])[0]
+
+            print(f'Nome: {nome}')
+
+            # verifica existencia do usuario
+            if self.usuario_existente(login, senha):
+
+                # atualiza o arquivo com o nome, se a senha estiver correta
+                with open('dados_login.txt', 'r', encoding='utf-8') as file:
+                    lines = file.readlines()
+
+                with open('dados_login.txt', 'w', encoding='utf-8') as file:
+                    for line in lines:
+                        stored_login, stored_senha, stored_nome = line.strip().split(';')
+                        if login == stored_login and senha == stored_senha:
+                            line = f'{login};{senha};{nome}\n'
+                        file.write(line)
+
+                self.send_response(302)
+                self.send_header("Content-type", "text/html; charset=utf-8")
+                self.end_headers()
+                self.wfile.write("Registro recebido com sucesso!".encode('utf-8'))
 
         else:
-            # se não for a rota "/login", continua com o comportamento padrão
-            super(MyHandler, self).do_POST()
+            self.remover_ultima_linha('dados_login.txt')
+            self.send_response(302)
+            self.send_header("Content-type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write("RSenha não confere. Retome o procedimento.".encode('utf-8'))
 
 
 # define a porta a ser utilizada
