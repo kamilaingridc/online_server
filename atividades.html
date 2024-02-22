@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Atividades</title>
+	<link rel="stylesheet" href="#">
+	<!-- <link rel="stylesheet" href="style.css"> -->
+
+</head>
+<body>
+	<main>
+		<div class="login-container">
+			<div class="error-message">
+				<!-- Mensagem de erro será inserida aqui -->
+			</div>
+			<div class="welcome-message">
+				{message}
+			</div>
+
+			<h2>Register</h2>
+			<form action="/cad_atividade" method="post">
+
+				<label for="codigo">Código:</label>
+				<input type="text" id="codigo" name="codigo" value="{codigo}" required>
+
+				<label for="descricao">Descrição da atividade:</label>
+				<input type="text" id="descricao" name="descricao" required>
+
+				<button type="submit">Confirmar</button>
+			</form>
+		</div>
+	</main>
+</body>
+</html>
