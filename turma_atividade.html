@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Relação turma e atividade
+    </title>
+	<link rel="stylesheet" href="#">
+
+</head>
+<body>
+	<main>
+		<div class="login-container">
+			<div class="error-message">
+				<!-- Mensagem de erro será inserida aqui -->
+			</div>
+			<div class="welcome-message">
+				{message}
+			</div>
+
+			<!-- <h2>Conection</h2> -->
+			<form action="/cad_turm_atividade" method="post">
+				
+				<label for="code">Código da Turma:</label>
+				<input type="code" id="code" name="code" required>
+
+                <label for="codigo">Código da Atividade:</label>
+				<input type="codigo" id="codigo" name="codigo" required>
+
+				<button type="submit">Cadastrar</button>
+			</form>
+		</div>
+	</main>
+</body>
+</html>
