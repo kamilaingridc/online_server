@@ -215,28 +215,24 @@ class MyHandler(SimpleHTTPRequestHandler):
         
         return False
     
-    def turma_existente(self, code, descricao):
-        # Verifica a existência da turma
-        with open('dados_turmas.txt', 'r', encoding='utf-8') as file:
-            for line in file:
-                if line.strip():
-                    code_line, descricao_line = line.strip().split(';')
-                    if code == code_line and descricao == descricao_line:
-                        print("Código: ", code)
-                        return True
-        return False
-    
-    def atividade_existente(self, codigo, descricao):
+    def turma_existente(self, descricao):
         # Verifica a existência da turma
         cursor = conexao.cursor()
-        cursor.execute("SELECT senha FROM dados_login WHERE login = %s", (login,))
+        cursor.execute("SELECT descricao FROM turmas WHERE descricao = %s", (descricao,))
         resultado = cursor.fetchone()
         cursor.close()
-        
-        return False
+        return resultado is not None
+    
+    def atividade_existente(self, descricao):
+        # Verifica a existência da atividade
+        cursor = conexao.cursor()
+        cursor.execute("SELECT descricao FROM atividades WHERE descricao = %s", (descricao,))
+        resultado = cursor.fetchone()
+        cursor.close()
+        return resultado is not None
     
     def login_turma_existente(self, login, turma):
-# Verifica se a login existe no arquivo de turmas
+        # Verifica se a login existe no arquivo de turmas
         with open("dados_login.txt", "r", encoding="utf-8") as login_file:
             for line in login_file:
                 stored_login = line.strip().split(';')[0]  
@@ -259,10 +255,8 @@ class MyHandler(SimpleHTTPRequestHandler):
             for line in login_file:
                 stored_login = line.strip().split(';')[0]  
                 if login == stored_login:
-                    print("Turma IF check :)")
                     break
             else:
-                print("tURMA ELSE CHECK :)")
                 return False
         
         # Verifica se a turma existe no arquivo de turmas
@@ -270,30 +264,29 @@ class MyHandler(SimpleHTTPRequestHandler):
             for line in turma_file:
                 stored_turma = line.strip().split(';')[0]
                 if turma == stored_turma:
-                    print("tURMA if CHECK 2 :)")
                     return True
-        print("tURMA false CHECK 2 :)")
         return False
 
     def adicionar_usuario(self, login, senha, nome):
         cursor = conexao.cursor()
-
         senha_hash = hashlib.sha256(senha.encode('utf-8')).hexdigest()
         cursor.execute("INSERT INTO dados_login (login, senha, nome) VALUES (%s, %s, %s)", (login, senha_hash, nome))
-
         conexao.commit()
-
         cursor.close()
 
-    def adicionar_turma(self, code, descricao):
-        # Adiciona uma nova turma ao arquivo
-        with open('dados_turmas.txt', 'a', encoding='utf-8') as file:
-            file.write(f'{code};{descricao};\n')
+    def adicionar_turma(self, descricao):
+        # Adiciona uma nova turma ao banco de dados
+        cursor = conexao.cursor()
+        cursor.execute("INSERT INTO turmas (descricao) VALUES (%s);", (descricao,))
+        conexao.commit()
+        cursor.close()
 
-    def adicionar_turma(self, codigo, descricao):
-        # Adiciona uma nova turma ao arquivo
-        with open('dados_atividades.txt', 'a', encoding='utf-8') as file:
-            file.write(f'{codigo};{descricao};\n')
+    def adicionar_atividade(self, descricao):
+        # Adiciona uma nova atividade ao banco de dados
+        cursor = conexao.cursor()
+        cursor.execute("INSERT INTO atividades (descricao) VALUES (%s)", (descricao,))
+        conexao.commit()
+        cursor.close()
 
     def remover_ultima_linha(self, arquivo):
         print("Vou excluir a última linha.")
@@ -301,6 +294,63 @@ class MyHandler(SimpleHTTPRequestHandler):
             lines = file.readlines()
         with open(arquivo, 'w', encoding='utf-8') as file:
             file.writelines(lines[:-1])
+
+############################################################
+    def carregar_turmas_professor(self, login):
+        # carrega turmas do professor
+        cursor = conexao.cursor()
+        cursor.execute("SELECT id_professor, nome FROM dados_login WHERE login = %s", (login,))
+        resultado = cursor.fetchone()
+        cursor.close()
+
+        # resultado[0] trás o id_professor e o resultado[1] trás o nome do professor
+        id_professor = resultado[0]
+
+        # obter turmas do professor
+        cursor = conexao.cursor()
+        cursor.execute("SELECT turmas.id_turma, turmas.descricao FROM turmas_professor INNER JOIN turmas ON turmas_professor.id_turma = turmas.id_turma WHERE turmas_professor.id_professor = %s", (id_professor,))
+        turmas = cursor.fetchall()
+        cursor.close()
+
+        # linhas da tabela 
+        linhas_tabela = ""
+        for turma in turmas:
+            id_turma = turma[0]
+            descricao_turma = turma[1]
+            link_atividade = "<a href='/atividade_turma?id={}'><i class='fas fa-pencil-alt'></i></a>".format(id_turma)
+            linha = "<tr><td style='text-align:center'>{}</td><td>{}</td><td style='text-align:center'>{}</td></tr>".format(id_turma, descricao_turma, link_atividade)
+            linhas_tabela += linha
+        
+        # turmas do banco de dados
+        cursor = conexao.cursor()
+        cursor.execute("SELECT id_turma, descricao FROM turmas")
+        turmas = cursor.fetchall()
+        cursor.close()
+
+        # caixa de seleção 
+        opcoes_caixa_selecao = ""
+        for turma in turmas:
+            opcoes_caixa_selecao += "<option value='{}'>{}</option>".format(turma[0], turma[1])
+
+        with open(os.path.join(os.getcwd(), 'turma_professor.html'), 'r', encoding='utf-8') as cad_turma_file:
+            content = cad_turma_file.read()
+
+            content = content.replace('{nome_professor}', resultado[1])
+            content = content.replace('{id_professor}', str(id_professor))
+            content = content.replace('{login}', str(login))
+
+            # substituindo o marcados da posição pelas linhas da tabela
+            content = content.replace('<!-- Tabela com linhas zebradas -->', linhas_tabela)
+            # substitui o marcador de posição pelas opções na caixa de seleção.
+            content = content.replace('<!-- Opções da caixa de seleção serão inseridas aqui -->', opcoes_caixa_selecao)
+        
+        self.send_response(200)
+        self.send_header("Content-type", "text/html; charset=utf-8")
+        self.end_headers()
+
+        self.wfile.write(content.encode('utf-8'))
+        # fim
+############################################################
 
     def do_POST(self):
         # verifica se a rota é "/enviar_login"
@@ -322,12 +372,13 @@ class MyHandler(SimpleHTTPRequestHandler):
             senha = form_data.get('password', [''])[0]
 
             if self.usuario_existente(login, senha):
-                self.send_response(200)
-                self.send_header('Content-type', 'text/html; charset=utf-8')
-                self.end_headers()
-                mensagem = f'Usuário {login} logado com sucesso!'
-                self.wfile.write(mensagem.encode('utf-8'))
+                # self.send_response(200)
+                # self.send_header('Content-type', 'text/html; charset=utf-8')
+                # self.end_headers()
+                # mensagem = f'Usuário {login} logado com sucesso!'
+                # self.wfile.write(mensagem.encode('utf-8'))
                 # SUBSTITUIR POR UMA PÁGINA HTML
+                self.carregar_turmas_professor(login)
               
             else:
                 # verifica se o usuário já está cadastrado, caso não esteja foi caso de login errado
@@ -386,25 +437,21 @@ class MyHandler(SimpleHTTPRequestHandler):
             code = form_data.get('code', [''])[0]
             descricao = form_data.get('descricao', [''])[0]
 
-            print(f'Turma: {descricao}')
-
             # Verifica a existência da turma
-            if self.turma_existente(code, descricao):
+            if self.turma_existente(descricao):
                 # Turma já existe, não é necessário fazer nada
                 self.send_response(200)
                 self.send_header("Content-type", "text/html; charset=utf-8")
                 self.end_headers()
                 self.wfile.write("Turma já existe!".encode('utf-8'))
             else:
-                # Adiciona a nova turma ao arquivo
-                with open('dados_turmas.txt', 'a', encoding='utf-8') as file:
-                    file.write(f'{code};{descricao}\n')
+                # Adiciona a nova turma ao banco
+                self.adicionar_turma
 
                 self.send_response(302)
                 self.send_header("Content-type", "text/html; charset=utf-8")
                 self.end_headers()
                 self.wfile.write("Nova turma recebida com sucesso!".encode('utf-8'))
-                print('laldlasdal')
 
         elif self.path.startswith('/cad_atividade'):
             # Obtém o comprimento do corpo da requisição
@@ -429,8 +476,7 @@ class MyHandler(SimpleHTTPRequestHandler):
                 self.wfile.write("Atividade já existe!".encode('utf-8'))
             else:
                 # Adiciona a nova turma ao arquivo
-                with open('dados_atividades.txt', 'a', encoding='utf-8') as file:
-                    file.write(f'{codigo};{descricao}\n')
+                self.adicionar_atividade
 
                 self.send_response(302)
                 self.send_header("Content-type", "text/html; charset=utf-8")
@@ -466,7 +512,7 @@ class MyHandler(SimpleHTTPRequestHandler):
                 self.send_response(302)
                 self.send_header("Content-type", "text/html; charset=utf-8")
                 self.end_headers()
-                self.wfile.write("Nova lalala2 com sucesso!".encode('utf-8'))
+                self.wfile.write("com sucesso!".encode('utf-8'))
 
         elif self.path.startswith('/cad_turm_atividade'):
             # Obtém o comprimento do corpo da requisição
@@ -489,13 +535,41 @@ class MyHandler(SimpleHTTPRequestHandler):
                 self.send_header("Content-type", "text/html; charset=utf-8")
                 self.end_headers()
                 self.wfile.write("Já cadastrado!".encode('utf-8'))
-                print("IF POST LALAL")
             else:
                 # Adiciona a nova turma ao arquivo
                 with open('dados_turma_atividade.txt', 'a', encoding='utf-8') as file:
                     file.write(f'{code};{codigo}\n')
                 
-                print("Else do post llalal")
+
+                self.send_response(302)
+                self.send_header("Content-type", "text/html; charset=utf-8")
+                self.end_headers()
+                self.wfile.write("Nova lalala3 com sucesso!".encode('utf-8'))
+
+        elif self.path.startswith('/confirmar_turma_professor'):
+            # Obtém o comprimento do corpo da requisição
+            content_length = int(self.headers['Content-Length'])
+            # Lê o corpo
+            body = self.rfile.read(content_length).decode('utf-8')
+            # Analisa os dados do formulário
+            form_data = parse_qs(body, keep_blank_values=True)
+
+            # Extrai os dados do formulário
+            code = form_data.get('code', [''])[0]
+            codigo = form_data.get('codigo', [''])[0]
+
+            # Verifica a existência da turma
+            if self.turma_atividade_existente(code, codigo):
+                # atividade já existe, não é necessário fazer nada
+                self.send_response(200)
+                self.send_header("Content-type", "text/html; charset=utf-8")
+                self.end_headers()
+                self.wfile.write("Já cadastrado!".encode('utf-8'))
+            else:
+                # Adiciona a nova turma ao arquivo
+                with open('dados_turma_atividade.txt', 'a', encoding='utf-8') as file:
+                    file.write(f'{code};{codigo}\n')
+                
 
                 self.send_response(302)
                 self.send_header("Content-type", "text/html; charset=utf-8")
