@@ -231,24 +231,23 @@ class MyHandler(SimpleHTTPRequestHandler):
         cursor.close()
         return resultado is not None
     
-    def login_turma_existente(self, login, turma):
-        # Verifica se a login existe no arquivo de turmas
-        with open("dados_login.txt", "r", encoding="utf-8") as login_file:
-            for line in login_file:
-                stored_login = line.strip().split(';')[0]  
-                if login == stored_login:
-                    break
-            else:
-                return False
-        
-        # Verifica se a turma existe no arquivo de turmas
-        with open("dados_turmas.txt", "r", encoding="utf-8") as turma_file:
-            for line in turma_file:
-                stored_turma = line.strip().split(';')[0]
-                if turma == stored_turma:
-                    return True
-        return False
-    
+    def login_turma_existente(self, login, descricao):
+        # Verifica se o login existe no arquivo de turmas
+        cursor = conexao.cursor()
+        cursor.execute("SELECT login FROM dados_login WHERE login = %s", (login,))
+        resultado_login = cursor.fetchone()
+        cursor.close()
+
+        if resultado_login:
+            # Verifica se a turma existe no arquivo de turmas
+            cursor = conexao.cursor()
+            cursor.execute("SELECT descricao FROM turmas WHERE descricao = %s", (descricao,))
+            resultado_turma = cursor.fetchone()
+            cursor.close()
+            return resultado_turma is not None
+        else:
+            return False
+
     def turma_atividade_existente(self, login, turma):
 # Verifica se a login existe no arquivo de turmas
         with open("dados_turmas.txt", "r", encoding="utf-8") as login_file:
@@ -446,7 +445,7 @@ class MyHandler(SimpleHTTPRequestHandler):
                 self.wfile.write("Turma já existe!".encode('utf-8'))
             else:
                 # Adiciona a nova turma ao banco
-                self.adicionar_turma
+                self.adicionar_turma(descricao)
 
                 self.send_response(302)
                 self.send_header("Content-type", "text/html; charset=utf-8")
@@ -465,10 +464,8 @@ class MyHandler(SimpleHTTPRequestHandler):
             codigo = form_data.get('codigo', [''])[0]
             descricao = form_data.get('descricao', [''])[0]
 
-            print(f'Atividade: {descricao}')
-
             # Verifica a existência da turma
-            if self.atividade_existente(codigo, descricao):
+            if self.atividade_existente(descricao):
                 # atividade já existe, não é necessário fazer nada
                 self.send_response(200)
                 self.send_header("Content-type", "text/html; charset=utf-8")
@@ -476,12 +473,12 @@ class MyHandler(SimpleHTTPRequestHandler):
                 self.wfile.write("Atividade já existe!".encode('utf-8'))
             else:
                 # Adiciona a nova turma ao arquivo
-                self.adicionar_atividade
+                self.adicionar_atividade(descricao)
 
                 self.send_response(302)
                 self.send_header("Content-type", "text/html; charset=utf-8")
                 self.end_headers()
-                self.wfile.write("Nova lalala com sucesso!".encode('utf-8'))
+                self.wfile.write("Nova atividade criada com sucesso!".encode('utf-8'))
 
         elif self.path.startswith('/cad_login_turma'):
             # Obtém o comprimento do corpo da requisição
@@ -494,8 +491,6 @@ class MyHandler(SimpleHTTPRequestHandler):
             # Extrai os dados do formulário
             email = form_data.get('email', [''])[0]
             descricao = form_data.get('descricao', [''])[0]
-
-            print(f'Turma: {descricao}')
 
             # Verifica a existência da turma
             if self.login_turma_existente(email, descricao):
